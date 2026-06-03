@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - 图书查询</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>图书管理系统</h3>
+                <p style="font-size: 12px; color: #95a5a6;">学生端</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/student/index.html">首页</a></li>
+                <li><a href="/student/books.html" class="active">图书查询</a></li>
+                <li><a href="/student/myborrow.html">我的借阅</a></li>
+                <li><a href="/student/profile.html">个人信息</a></li>
+                <li><a href="javascript:logout()">退出登录</a></li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <div><h2>图书查询</h2></div>
+                <div><span id="studentName"></span></div>
+            </div>
+            <div class="content">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="search-box">
+                            <input type="text" id="keyword" placeholder="搜索书名/作者/ISBN">
+                            <select id="categoryFilter"><option value="">全部分类</option></select>
+                            <button class="btn btn-info" onclick="searchBooks()">搜索</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr><th>图书编号</th><th>书名</th><th>作者</th><th>出版社</th><th>分类</th><th>可借</th><th>操作</th></tr>
+                            </thead>
+                            <tbody id="bookTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script>
+        async function loadCategories() {
+            const result = await request('/category/list');
+            if (result && result.code === 200) {
+                document.getElementById('categoryFilter').innerHTML = '<option value="">全部分类</option>' + 
+                    result.data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            }
+        }
+        
+        async function loadBooks() {
+            const result = await request('/book/list');
+            if (result && result.code === 200) renderBooks(result.data);
+        }
+        
+        async function searchBooks() {
+            const keyword = document.getElementById('keyword').value;
+            const categoryId = document.getElementById('categoryFilter').value;
+            let url = keyword ? `/book/search?keyword=${encodeURIComponent(keyword)}` : (categoryId ? `/book/category/${categoryId}` : '/book/list');
+            const result = await request(url);
+            if (result && result.code === 200) renderBooks(result.data);
+        }
+        
+        function renderBooks(books) {
+            document.getElementById('bookTable').innerHTML = books.map(book => `
+                <tr>
+                    <td>${book.bookNo}</td>
+                    <td>${book.title}</td>
+                    <td>${book.author || '-'}</td>
+                    <td>${book.publisher || '-'}</td>
+                    <td>${book.category?.name || '-'}</td>
+                    <td>${book.availableCount > 0 ? `<span class="badge badge-success">${book.availableCount}</span>` : '<span class="badge badge-danger">0</span>'}</td>
+                    <td>
+                        ${book.availableCount > 0 ? `<button class="btn btn-sm btn-success" onclick="borrowBook(${book.id})">借阅</button>` : '<span style="color:#999;">暂无库存</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function borrowBook(bookId) {
+            if (!confirm('确定借阅该图书吗？')) return;
+            const result = await request('/borrow/borrow', { method: 'POST', body: JSON.stringify({ bookId }) });
+            if (result && result.code === 200) {
+                showToast('借阅成功');
+                loadBooks();
+            } else {
+                showToast(result?.message || '借阅失败', 'error');
+            }
+        }
+        
+        async function init() {
+            const profile = await request('/student/profile');
+            if (profile && profile.code === 200) document.getElementById('studentName').textContent = profile.data.name;
+            await loadCategories();
+            loadBooks();
+        }
+        init();
+    </script>
+</body>
+</html>

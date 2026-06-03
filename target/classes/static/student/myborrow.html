@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - 我的借阅</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>图书管理系统</h3>
+                <p style="font-size: 12px; color: #95a5a6;">学生端</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/student/index.html">首页</a></li>
+                <li><a href="/student/books.html">图书查询</a></li>
+                <li><a href="/student/myborrow.html" class="active">我的借阅</a></li>
+                <li><a href="/student/profile.html">个人信息</a></li>
+                <li><a href="javascript:logout()">退出登录</a></li>
+            </ul>
+        </div>
+        <div class="main-content">
+            <div class="header">
+                <div><h2>我的借阅</h2></div>
+                <div><span id="studentName"></span></div>
+            </div>
+            <div class="content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <button class="btn btn-info" onclick="loadCurrent()">当前借阅</button>
+                            <button class="btn btn-success" onclick="loadAll()">全部记录</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr><th>图书编号</th><th>书名</th><th>借阅时间</th><th>应还时间</th><th>归还时间</th><th>状态</th><th>操作</th></tr>
+                            </thead>
+                            <tbody id="borrowTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/common.js"></script>
+    <script>
+        function renderRecords(records) {
+            document.getElementById('borrowTable').innerHTML = records.map(r => `
+                <tr>
+                    <td>${r.book?.bookNo || '-'}</td>
+                    <td>${r.book?.title || '-'}</td>
+                    <td>${formatDate(r.borrowTime)}</td>
+                    <td>${formatDate(r.dueTime)}</td>
+                    <td>${formatDate(r.returnTime)}</td>
+                    <td>${getStatusBadge(r.status, r.dueTime)}</td>
+                    <td>
+                        ${r.status === 0 ? `<button class="btn btn-sm btn-success" onclick="returnBook(${r.id})">归还</button>` : '-'}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" style="text-align:center;">暂无记录</td></tr>';
+        }
+        
+        async function loadCurrent() {
+            const result = await request('/borrow/my/current');
+            if (result && result.code === 200) renderRecords(result.data);
+        }
+        
+        async function loadAll() {
+            const result = await request('/borrow/my');
+            if (result && result.code === 200) renderRecords(result.data);
+        }
+        
+        async function returnBook(id) {
+            if (!confirm('确定归还该图书吗？')) return;
+            const result = await request(`/borrow/return/${id}`, { method: 'POST' });
+            if (result && result.code === 200) {
+                showToast('归还成功');
+                loadCurrent();
+            } else {
+                showToast(result?.message || '操作失败', 'error');
+            }
+        }
+        
+        async function init() {
+            const profile = await request('/student/profile');
+            if (profile && profile.code === 200) document.getElementById('studentName').textContent = profile.data.name;
+            loadCurrent();
+        }
+        init();
+    </script>
+</body>
+</html>
