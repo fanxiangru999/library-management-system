@@ -70,49 +70,12 @@ library-management-system/
 | `book_category` | 图书分类表 |
 | `borrow_record` | 借阅记录表（借书/应还/归还时间、状态 0 借阅中 / 1 已归还 / 2 已超期） |
 
-## 快速开始
-
-### 环境要求
+## 环境要求
 - JDK 17+
 - Maven 3.6+
 - MySQL 8.0+
 
-### 1. 初始化数据库
-创建数据库并导入脚本（脚本中已包含建表语句与示例数据）：
-
-```sql
-CREATE DATABASE library_db DEFAULT CHARACTER SET utf8mb4;
-```
-
-```bash
-mysql -u root -p library_db < sql/library_db.sql
-```
-
-### 2. 修改配置
-按本地环境修改 `src/main/resources/application.yml` 中的数据库连接信息：
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/library_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456   # 改为你的数据库密码
-```
-
-### 3. 启动项目
-
-```bash
-mvn spring-boot:run
-```
-
-或先打包再运行：
-
-```bash
-mvn clean package
-java -jar target/library-management-system-1.0.0.jar
-```
-
-### 4. 访问系统
+## 访问系统
 启动后访问：<http://localhost:8080/login.html>
 
 ## 默认账号
